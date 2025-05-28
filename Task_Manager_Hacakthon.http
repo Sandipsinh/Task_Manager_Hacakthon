@@ -1,0 +1,6 @@
+@Kili_Summary_hacakthon_HostAddress = http://localhost:5266
+
+GET {{Kili_Summary_hacakthon_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
