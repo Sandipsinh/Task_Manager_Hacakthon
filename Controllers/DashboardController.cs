@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
-using System;
 using Task_Manager_Hacakthon.Modal;
 using Task_Manager_Hacakthon.Services;
 
@@ -14,7 +13,7 @@ namespace Task_Manager_Hacakthon.Controllers
         private readonly AzureOpenAIService _openAIService;
         private readonly AzureSearchService _searchService;
 
-        public DashboardController(AzureOpenAIService openAIService, AzureSearchService searchService )
+        public DashboardController(AzureOpenAIService openAIService, AzureSearchService searchService)
         {
 
             _openAIService = openAIService;
@@ -31,11 +30,16 @@ namespace Task_Manager_Hacakthon.Controllers
             var totalCountJson = JsonConvert.DeserializeObject<EngagementsCount>(totalCount);
 
             var milestoneDataJson = await _searchService.GetMilestoneInfoAsJsonAsync();
-            var MilestoneInfo= await _openAIService.GenerateMilestoneInfoAsync(milestoneDataJson, taxyear);
+            var MilestoneInfo = await _openAIService.GenerateMilestoneInfoAsync(milestoneDataJson, taxyear);
             var milestoneInfoJson = JsonConvert.DeserializeObject<List<MilestoneInfo>>(MilestoneInfo);
+
+            var craDataJson = await _searchService.GetCraStatusInfoAsJsonAsync();
+            var craInfo = await _openAIService.GenerateCRAStatusAsync(craDataJson, taxyear);
+            var craStatusInfoJson = JsonConvert.DeserializeObject<List<CRAStatus>>(craInfo);
 
             dashboardInfo.EngagementsCount = totalCountJson;
             dashboardInfo.MilestoneInfo = milestoneInfoJson;
+            dashboardInfo.CRAStatusDetail = craStatusInfoJson;
             string jsonString = JsonConvert.SerializeObject(dashboardInfo, Formatting.Indented);
             return Ok(dashboardInfo);
         }

@@ -2,11 +2,8 @@
 {
     public class CRAStatus
     {
-        public string Office { get; set; }
-        public int ConnectionSuccessCount { get; set; }
-        public int DownloadSuccessCount { get; set; }
+        public string Office_name { get; set; }
+        public int ConnectSuccessful { get; set; }
+        public int DownloadSuccessful { get; set; }
     }
-
-
-
 }

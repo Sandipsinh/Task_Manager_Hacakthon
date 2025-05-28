@@ -1,13 +1,7 @@
 ﻿using Azure.AI.OpenAI;
 using Azure;
-using Microsoft.Extensions.Configuration;
-using System;
-using System.Threading.Tasks;
 using System.Text.Json;
 using System.Text;
-using Azure.Search.Documents.Models;
-using Azure.Search.Documents;
-using Task_Manager_Hacakthon.Controllers;
 using Task_Manager_Hacakthon.Modal;
 using System.Text.RegularExpressions;
 
@@ -173,6 +167,11 @@ User Tasks:
             JsonElement root = doc.RootElement;
             var responseMessage = root.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
             responseMessage = Regex.Replace(responseMessage, @"^```json|```$", "", RegexOptions.Multiline).Trim();
+            if (responseMessage.StartsWith("{"))
+            {
+                responseMessage = responseMessage.Substring(1, responseMessage.Length - 2); // remove outer {}
+            }
+
             return responseMessage;
         }
 
@@ -188,7 +187,7 @@ User Tasks:
         {
             new { role = "system", content = "You are an AI assistant that helps people find information." },
               new { role = "system", content = $"Filtered Data:\n{jsonData}" },
-            new { role = "user", content = $"You are a strict data formatter. \r\nGive the data for taxyear {taxYear} and the difference with previous year in percetange for all fields\r\n \r\nAlways return the result in this exact JSON format without any additional explanation or text:\r\n{{\r\n  \"tax_year\": \"2025\",  \r\n   \"roll_forward_engagements\": 8,      \r\n    \"roll_forward_difference_percentage\": 60.0,   \r\n    \"activated_engagements\": 568,\r\n     \"activated_engagements_difference_percentage\": -49.6,  \r\n    \"inactivated_engagements\": 3,\r\n      \"inactivated_engagements_difference_percentage\": -72.7   \r\n}}\r\n\r\nReplace the example numbers with real values retrieved from the documents.\r\nOnly return this JSON — no extra commentary." }
+            new { role = "user", content = $"You are a strict data formatter. \r\nList all milestone records for Tax Year {taxYear} from the data. For each record, include the office name and ConnectSuccessful and DownloadSuccessful.Always return the result in this exact JSON format without any additional explanation or text:\r\n{{\r\n[\r\n{{\r\n\"office_name\":\"Kelowna\",\r\n\"ConnectSuccessful\" :22,\r\n \"DownloadSuccessful\": 18  \r\n}},\r\n{{\r\n\"office_name\":\"Pool\",\r\n\"ConnectSuccessful\" :22,\r\n \"DownloadSuccessful\": 18  \r\n}}\r\n]\r\n}}\r\n\r\nReplace the example numbers with real values retrieved from the documents Do not summarize or skip any records. Return one entry per office. If no offices are found for {taxYear}, say so explicitly .Only return this JSON — no extra commentary." }
 
         },
                 max_tokens = 300
@@ -202,6 +201,10 @@ User Tasks:
             JsonElement root = doc.RootElement;
             var responseMessage = root.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
             responseMessage = Regex.Replace(responseMessage, @"^```json|```$", "", RegexOptions.Multiline).Trim();
+            if (responseMessage.StartsWith("{"))
+            {
+                responseMessage = responseMessage.Substring(1, responseMessage.Length - 2); // remove outer {}
+            }
             return responseMessage;
         }
 
