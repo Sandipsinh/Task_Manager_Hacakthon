@@ -12,8 +12,8 @@ using Task_Manager_Hacakthon.Modal;
 using System.Text.RegularExpressions;
 
 namespace Task_Manager_Hacakthon.Services
-{   
-    
+{
+
     public class AzureOpenAIService
     {
         private readonly OpenAIClient _client;
@@ -31,7 +31,7 @@ namespace Task_Manager_Hacakthon.Services
         }
 
         public async Task<string> GenerateTasksAsync(string jsonData)
-        {           
+        {
             using HttpClient client = new HttpClient();
             client.DefaultRequestHeaders.Add("api-key", _apiKey);
 
@@ -76,7 +76,7 @@ Data:
         public async Task<string> RefineCombinedTasksAsync(string aiTasksJson, List<TaskItem> userTasks)
         {
             var userTasksJson = JsonSerializer.Serialize(userTasks);
-           
+
 
             using HttpClient client = new HttpClient();
             client.DefaultRequestHeaders.Add("api-key", _apiKey);
@@ -120,7 +120,7 @@ User Tasks:
         }
 
 
-        public async Task<string> GenerateEngagementCountAsync(string jsonData,int taxYear)
+        public async Task<string> GenerateEngagementCountAsync(string jsonData, int taxYear)
         {
             using HttpClient client = new HttpClient();
             client.DefaultRequestHeaders.Add("api-key", _apiKey);
@@ -132,7 +132,7 @@ User Tasks:
             new { role = "system", content = "You are an AI assistant that helps people find information." },
               new { role = "system", content = $"Filtered Data:\n{jsonData}" },
             new { role = "user", content = $"You are a strict data formatter. \r\nGive the data for taxyear {taxYear} and the difference with previous year in percetange for all fields\r\n \r\nAlways return the result in this exact JSON format without any additional explanation or text:\r\n{{\r\n  \"tax_year\": \"2025\",  \r\n   \"roll_forward_engagements\": 8,      \r\n    \"roll_forward_difference_percentage\": 60.0,   \r\n    \"activated_engagements\": 568,\r\n     \"activated_engagements_difference_percentage\": -49.6,  \r\n    \"inactivated_engagements\": 3,\r\n      \"inactivated_engagements_difference_percentage\": -72.7   \r\n}}\r\n\r\nReplace the example numbers with real values retrieved from the documents.\r\nOnly return this JSON — no extra commentary." }
-           
+
         },
                 max_tokens = 300
             };
@@ -144,7 +144,7 @@ User Tasks:
             using JsonDocument doc = JsonDocument.Parse(responseString);
             JsonElement root = doc.RootElement;
             var responseMessage = root.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
-            responseMessage = Regex.Replace(responseMessage, @"^```json|```$", "", RegexOptions.Multiline).Trim();            
+            responseMessage = Regex.Replace(responseMessage, @"^```json|```$", "", RegexOptions.Multiline).Trim();
             return responseMessage;
         }
 
@@ -175,6 +175,37 @@ User Tasks:
             responseMessage = Regex.Replace(responseMessage, @"^```json|```$", "", RegexOptions.Multiline).Trim();
             return responseMessage;
         }
+
+
+        public async Task<string> GenerateCRAStatusAsync(string jsonData, int taxYear)
+        {
+            using HttpClient client = new HttpClient();
+            client.DefaultRequestHeaders.Add("api-key", _apiKey);
+
+            var requestData = new
+            {
+                messages = new[]
+        {
+            new { role = "system", content = "You are an AI assistant that helps people find information." },
+              new { role = "system", content = $"Filtered Data:\n{jsonData}" },
+            new { role = "user", content = $"You are a strict data formatter. \r\nGive the data for taxyear {taxYear} and the difference with previous year in percetange for all fields\r\n \r\nAlways return the result in this exact JSON format without any additional explanation or text:\r\n{{\r\n  \"tax_year\": \"2025\",  \r\n   \"roll_forward_engagements\": 8,      \r\n    \"roll_forward_difference_percentage\": 60.0,   \r\n    \"activated_engagements\": 568,\r\n     \"activated_engagements_difference_percentage\": -49.6,  \r\n    \"inactivated_engagements\": 3,\r\n      \"inactivated_engagements_difference_percentage\": -72.7   \r\n}}\r\n\r\nReplace the example numbers with real values retrieved from the documents.\r\nOnly return this JSON — no extra commentary." }
+
+        },
+                max_tokens = 300
+            };
+            string jsonRequest = JsonSerializer.Serialize(requestData, new JsonSerializerOptions { WriteIndented = true });
+            var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
+
+            HttpResponseMessage response = await client.PostAsync(_apiendPoint, content);
+            string responseString = await response.Content.ReadAsStringAsync();
+            using JsonDocument doc = JsonDocument.Parse(responseString);
+            JsonElement root = doc.RootElement;
+            var responseMessage = root.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
+            responseMessage = Regex.Replace(responseMessage, @"^```json|```$", "", RegexOptions.Multiline).Trim();
+            return responseMessage;
+        }
+
+
         //public async Task<string> GenerateSummaryAsync(SummaryList request)
         //{
 
