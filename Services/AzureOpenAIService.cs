@@ -24,24 +24,23 @@ namespace Task_Manager_Hacakthon.Services
             _apiendPoint = config["AzureOpenAI:Endpoint"];
         }
 
-        public async Task<string> GenerateTasksAsync(string jsonData)
+        public async Task<string> GenerateTasksAsync(string jsonData, string email, string prompt)
         {
+
             using HttpClient client = new HttpClient();
             client.DefaultRequestHeaders.Add("api-key", _apiKey);
 
             var requestData = new
             {
-                prompt = $@"
-You are a smart assistant. Generate a list of tasks based on the following data, applying these rules:
-- PBC available with milestone start date > 30 days
-- Notes unread > 3 days
-- Deliverables not signed > 4 days
-- Pending client response > 10 days
- 
-Respond in JSON with title and reason.
-Data:
-{jsonData}",
-                max_tokens = 300
+                messages = new[]
+        {
+    new { role = "system", content = "You are an AI assistant that helps people find task information." },
+      new { role = "system", content = $"Filtered Data:\n{jsonData}" },
+    new { role = "user", content = $"You are a data extraction assistant.From the input text below, extract only the tasks where `userId` contains {email} .{prompt} \r\n \r\nEach object in the array should have the following fields:\r\n- engagementId\r\n- engagementName\r\n- title\r\n- description\r\n- priority\r\n- userId\r\n- taskName\r\n \r\n \r\nAlways return the result in this exact JSON format without any additional explanation or text:{{\r\n\"EngagementId\":\"C9EC5160-3540-4BDE-4680-08DA14114610\",\r\n\"EngagementName\":\"valid banner\",\r\n\"Title\":\"valid banner\",\r\n\"Description\":\"Preparer Assigned\",\r\n\"Priority\":\"High\",\r\n\"UserID\":\"abv@kpmg.ca\",\r\n\"TaskName\":\"NoPreparerAssigned\"\r\n}}.Replace the example numbers with real values retrieved from the documents.\r\nThe output must be a single, complete, valid JSON array. Do not add explanations or comments.\r\n \r\nIf there are no matching tasks, return: []." },
+    new {role="user",content="Validate that the JSON output is fully formed before returning it."}
+
+},
+                max_tokens = 3000
             };
             string jsonRequest = JsonSerializer.Serialize(requestData, new JsonSerializerOptions { WriteIndented = true });
             var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
@@ -51,19 +50,9 @@ Data:
             using JsonDocument doc = JsonDocument.Parse(responseString);
             JsonElement root = doc.RootElement;
             var responseMessage = root.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
-            //var response = await _client.GetChatCompletionsAsync(
-            //    _deployment,
-            //    new ChatCompletionsOptions
-            //    {
-            //        Messages =
-            //        {
-            //        new ChatMessage(ChatRole.System, "You are an intelligent task generator."),
-            //        new ChatMessage(ChatRole.User, prompt)
-            //        },
-            //        Temperature = 0.2f
-            //    });
+            responseMessage = Regex.Replace(responseMessage, @"^```json|```$", "", RegexOptions.Multiline).Trim();
 
-            //return response.Value.Choices[0].Message.Content;
+
             return responseMessage;
         }
 
