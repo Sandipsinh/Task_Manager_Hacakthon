@@ -167,6 +167,7 @@ User Tasks:
             JsonElement root = doc.RootElement;
             var responseMessage = root.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
             responseMessage = Regex.Replace(responseMessage, @"^```json|```$", "", RegexOptions.Multiline).Trim();
+
             if (responseMessage.StartsWith("{"))
             {
                 responseMessage = responseMessage.Substring(1, responseMessage.Length - 2); // remove outer {}
@@ -187,7 +188,7 @@ User Tasks:
         {
             new { role = "system", content = "You are an AI assistant that helps people find information." },
               new { role = "system", content = $"Filtered Data:\n{jsonData}" },
-            new { role = "user", content = $"You are a strict data formatter. \r\nList all milestone records for Tax Year {taxYear} from the data. For each record, include the office name and ConnectSuccessful and DownloadSuccessful.Always return the result in this exact JSON format without any additional explanation or text:\r\n{{\r\n[\r\n{{\r\n\"office_name\":\"Kelowna\",\r\n\"ConnectSuccessful\" :22,\r\n \"DownloadSuccessful\": 18  \r\n}},\r\n{{\r\n\"office_name\":\"Pool\",\r\n\"ConnectSuccessful\" :22,\r\n \"DownloadSuccessful\": 18  \r\n}}\r\n]\r\n}}\r\n\r\nReplace the example numbers with real values retrieved from the documents Do not summarize or skip any records. Return one entry per office. If no offices are found for {taxYear}, say so explicitly .Only return this JSON — no extra commentary." }
+            new { role = "user", content = $"You are a strict data formatter. \r\nList all cra records for Tax Year {taxYear} from the data. For each record, include the office name and ConnectSuccessful and DownloadSuccessful.Always return the result in this exact JSON format without any additional explanation or text:\r\n{{\r\n[\r\n{{\r\n\"office_name\":\"Kelowna\",\r\n\"ConnectSuccessful\" :22,\r\n \"DownloadSuccessful\": 18  \r\n}},\r\n{{\r\n\"office_name\":\"Pool\",\r\n\"ConnectSuccessful\" :22,\r\n \"DownloadSuccessful\": 18  \r\n}}\r\n]\r\n}}\r\n\r\nReplace the example numbers with real values retrieved from the documents Do not summarize or skip any records. Return one entry per office. If no offices are found for {taxYear}, say so explicitly .Only return this JSON — no extra commentary." }
 
         },
                 max_tokens = 300
@@ -207,6 +208,36 @@ User Tasks:
             }
             return responseMessage;
         }
+
+
+        public async Task<string> GenerateEfileOutcomeAsync(string jsonData, int taxYear)
+        {
+            using HttpClient client = new HttpClient();
+            client.DefaultRequestHeaders.Add("api-key", _apiKey);
+
+            var requestData = new
+            {
+                messages = new[]
+        {
+            new { role = "system", content = "You are an AI assistant that helps people find information." },
+              new { role = "system", content = $"Filtered Data:\n{jsonData}" },
+            new { role = "user", content = $"You are a strict data formatter. \r\nGive the data for taxyear {taxYear} and give me all status value in percentage for all fields\r\n \r\nAlways return the result in this exact JSON format without any additional explanation or text:\r\n{{\r\n  \"tax_year\": \"2025\",  \r\n   \"Accepted\":58,  \r\n   \"Transmitted\": 48, \r\n   \"Rejected\": 38, \r\n   \"Paper\": 18, \r\n   \"Approved\": 28,       \r\n      \"\r\n    \"Notrequiered\": 60,\": -72.7   \r\n}}\r\n\r\nReplace the example numbers with real values retrieved from the documents.\r\nOnly return this JSON — no extra commentary." }
+
+        },
+                max_tokens = 300
+            };
+            string jsonRequest = JsonSerializer.Serialize(requestData, new JsonSerializerOptions { WriteIndented = true });
+            var content = new StringContent(jsonRequest, Encoding.UTF8, "application/json");
+
+            HttpResponseMessage response = await client.PostAsync(_apiendPoint, content);
+            string responseString = await response.Content.ReadAsStringAsync();
+            using JsonDocument doc = JsonDocument.Parse(responseString);
+            JsonElement root = doc.RootElement;
+            var responseMessage = root.GetProperty("choices")[0].GetProperty("message").GetProperty("content").GetString();
+            responseMessage = Regex.Replace(responseMessage, @"^```json|```$", "", RegexOptions.Multiline).Trim();
+            return responseMessage;
+        }
+
 
 
         //public async Task<string> GenerateSummaryAsync(SummaryList request)

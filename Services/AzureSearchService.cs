@@ -57,6 +57,31 @@ namespace Task_Manager_Hacakthon.Services
             return string.Join("\n", retrievedDocs);
         }
 
+
+        public async Task<string> GetefileOutcomeAsJsonAsync()
+        {
+            var credential = new AzureKeyCredential(_apiKey);
+            var _searchClient = new SearchClient(
+                new Uri(_searchEndpoint),
+                "rag-efileoutcome",
+                credential
+            );
+            var options = new SearchOptions { Size = 1000, QueryType = SearchQueryType.Full };
+            var searchResults = await _searchClient.SearchAsync<SearchDocument>("*", options);
+
+            List<string> retrievedDocs = new List<string>();
+
+            await foreach (var result in searchResults.Value.GetResultsAsync())
+            {
+                if (result.Document.TryGetValue("chunk", out var content))
+                {
+                    retrievedDocs.Add(content.ToString());
+                }
+            }
+
+            return string.Join("\n", retrievedDocs);
+        }
+
         public async Task<string> GetMilestoneInfoAsJsonAsync()
         {
             var credential = new AzureKeyCredential(_apiKey);

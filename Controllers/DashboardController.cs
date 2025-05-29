@@ -37,9 +37,14 @@ namespace Task_Manager_Hacakthon.Controllers
             var craInfo = await _openAIService.GenerateCRAStatusAsync(craDataJson, taxyear);
             var craStatusInfoJson = JsonConvert.DeserializeObject<List<CRAStatus>>(craInfo);
 
+            var outcomeJson = await _searchService.GetefileOutcomeAsJsonAsync();
+            var outcomeCount = await _openAIService.GenerateEfileOutcomeAsync(outcomeJson, taxyear);
+            var efileoutcomeJson = JsonConvert.DeserializeObject<EfileOutcome>(outcomeCount);
+
             dashboardInfo.EngagementsCount = totalCountJson;
             dashboardInfo.MilestoneInfo = milestoneInfoJson;
             dashboardInfo.CRAStatusDetail = craStatusInfoJson;
+            dashboardInfo.EfileOutcomeDetail = efileoutcomeJson;
             string jsonString = JsonConvert.SerializeObject(dashboardInfo, Formatting.Indented);
             return Ok(dashboardInfo);
         }
